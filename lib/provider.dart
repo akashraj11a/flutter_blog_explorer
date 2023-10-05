@@ -1,7 +1,7 @@
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_blog_explorer/model.dart';
 import 'package:http/http.dart' as http;
-
 import 'database.dart';
 
 class BlogsProvider extends ChangeNotifier{
@@ -10,17 +10,28 @@ class BlogsProvider extends ChangeNotifier{
 String id ="";
    String title ="";
    String url ="";
-
   bool isLoading = true;
   String error = '';
    String error1 = '';
    var data;
   BlogsModel blogs = BlogsModel(blogs: []);
    BlogsModel favBlogs = BlogsModel(blogs: []);
+   bool isConnected = true;
+
+
+   void setIsConnected(bool value) {
+     isConnected = value;
+     notifyListeners();
+   }
 
 
    getDataFromApi()async{
     try{
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        setIsConnected(false);
+        return;
+      }
        http.Response response = await http.get(Uri.parse("https://intent-kit-16.hasura.app/api/rest/blogs"),
        headers: {
          'x-hasura-admin-secret': "32qR4KmXOIpsGPQKMqEJHGJS27G5s7HdSKO3gdtQd2kv5e852SiYwWNfxkZOBuQ6"
@@ -35,6 +46,7 @@ else{
     }
     catch(e){
 error = e.toString();
+setIsConnected(false);
     }
     isLoading = false;
     notifyListeners();
@@ -82,107 +94,3 @@ error = e.toString();
    }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-import 'dart:convert';
-
-import 'package:flutter/cupertino.dart';
-
-import 'database.dart';
-import 'http_request.dart';
-import 'model.dart';
-
-import 'package:flutter/material.dart';
-
-class BlogProvider with ChangeNotifier {
-  List<Blog> _blogs = [];
-  List<Blog> _favoriteBlogs = [];
-
-  List<Blog> get blogs => _blogs;
-  List<Blog> get favoriteBlogs => _favoriteBlogs;
-
-  final BlogApi _api;
-  final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
-
-  BlogProvider(this._api);
-
-  Future<void> fetchBlogs() async {
-    try {
-      final response = await _api.fetchBlogs();
-      print('API Response: $response'); // Add this line to check the API response
-      if (response is List) {
-        // If the response is a list, assume it's an array of blog objects
-        _blogs = response.map((data) {
-          return Blog(
-            id: data['id'] is String ? int.tryParse(data['id']) ?? 0 : data['id'],
-            title: data['title'] is String ? data['title'] : '',
-            image: data['image_url'] is String ? data['image_url'] : '',
-          );
-        }).toList();
-      } else if (response is Map<String, dynamic> && response.containsKey('blogs')) {
-        // If the response is a map with a "blogs" key, extract the list from there
-        final List<dynamic> blogDataList = response['blogs'];
-        _blogs = blogDataList.map((data) {
-          return Blog(
-            id: data['id'] is String ? int.tryParse(data['id']) ?? 0 : data['id'],
-            title: data['title'] is String ? data['title'] : '',
-            image: data['image_url'] is String ? data['image_url'] : '',
-          );
-        }).toList();
-      } else {
-        throw Exception('Invalid API response format');
-      }
-
-      notifyListeners();
-    } catch (e) {
-      print('Error fetching blogs: $e');
-      // Return an empty list in case of an exception
-      _blogs = [];
-    }
-  }
-
-  Future<void> toggleFavoriteStatus(int blogId) async {
-    final blog = _blogs.firstWhere((b) => b.id == blogId);
-    blog.isFavorite = !blog.isFavorite;
-    notifyListeners();
-
-    if (blog.isFavorite) {
-      await _databaseHelper.insertFavorite(blogId, true);
-    } else {
-      await _databaseHelper.removeFavorite(blogId);
-    }
-  }
-
-  Future<void> loadFavoriteBlogs() async {
-    final favoriteBlogIds = await _databaseHelper.getFavoriteBlogIds();
-
-    _favoriteBlogs = _blogs.where((blog) {
-      return favoriteBlogIds.contains(blog.id);
-    }).toList();
-
-    notifyListeners();
-  }
-}
-
-*/

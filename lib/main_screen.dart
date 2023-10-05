@@ -8,6 +8,9 @@ import 'package:provider/provider.dart';
 import 'model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:connectivity/connectivity.dart';
+
+import 'no_internet.dart';
 
 
 
@@ -24,6 +27,16 @@ class _BlogListScreenState extends State<BlogListScreen> {
     final blogProvider = Provider.of<BlogsProvider>(context,listen: false);
     blogProvider.getDataFromApi();
     super.initState();
+    checkInternetConnection();
+  }
+  Future<void> checkInternetConnection() async {
+    final blogProvider = Provider.of<BlogsProvider>(context, listen: false);
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      blogProvider.setIsConnected(false); // Set isConnected to false in BlogsProvider
+    } else {
+      blogProvider.setIsConnected(true); // Set isConnected to true in BlogsProvider
+    }
   }
 
   final customCacheManager = CacheManager(Config(
@@ -35,6 +48,9 @@ DatabaseHelper databaseHelper = DatabaseHelper.instance;
   @override
   Widget build(BuildContext context) {
     final blogProvider = Provider.of<BlogsProvider>(context);
+    if (!blogProvider.isConnected) {
+      return NoInternetScreen(); // Display the NoInternetScreen if there's no internet connection
+    }
     return Scaffold(
         appBar: AppBar(
           title: Text('Blog Explorer'),
